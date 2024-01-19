@@ -105,7 +105,7 @@ impl<'a> Visitor<'a> for Mysql<'a> {
         let mut mysql = Mysql {
             query: String::with_capacity(4096),
             parameters: Vec::with_capacity(128),
-            target_table: get_target_table(query.clone()),
+            target_table: get_target_table(&query),
         };
 
         Mysql::visit_query(&mut mysql, query)?;
@@ -158,7 +158,6 @@ impl<'a> Visitor<'a> for Mysql<'a> {
                 }
                 None => None,
             },
-            #[cfg(feature = "uuid")]
             ValueType::Uuid(uuid) => uuid.map(|uuid| self.write(format!("'{}'", uuid.hyphenated()))),
             ValueType::DateTime(dt) => dt.map(|dt| self.write(format!("'{}'", dt.to_rfc3339(),))),
             ValueType::Date(date) => date.map(|date| self.write(format!("'{date}'"))),
@@ -563,6 +562,16 @@ impl<'a> Visitor<'a> for Mysql<'a> {
         Ok(())
     }
 
+    #[cfg(feature = "postgresql")]
+    fn visit_json_array_agg(&mut self, _array_agg: JsonArrayAgg<'a>) -> visitor::Result {
+        unimplemented!("JSON_ARRAYAGG is not yet supported on MySQL")
+    }
+
+    #[cfg(feature = "postgresql")]
+    fn visit_json_build_object(&mut self, _build_obj: JsonBuildObject<'a>) -> visitor::Result {
+        unimplemented!("JSON_OBJECT is not yet supported on MySQL")
+    }
+
     fn visit_ordering(&mut self, ordering: Ordering<'a>) -> visitor::Result {
         let len = ordering.0.len();
 
@@ -610,7 +619,7 @@ impl<'a> Visitor<'a> for Mysql<'a> {
     }
 }
 
-fn get_target_table(query: Query<'_>) -> Option<Table<'_>> {
+fn get_target_table<'a>(query: &Query<'a>) -> Option<Table<'a>> {
     match query {
         Query::Delete(delete) => Some(delete.table.clone()),
         Query::Update(update) => Some(update.table.clone()),
@@ -859,7 +868,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "uuid")]
     fn test_raw_uuid() {
         let uuid = uuid::Uuid::new_v4();
         let (sql, params) = Mysql::build(Select::default().value(uuid.raw())).unwrap();
