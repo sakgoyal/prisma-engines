@@ -65,24 +65,11 @@ impl ReadQuery {
         }
     }
 
-    pub(crate) fn has_distinct(&self) -> bool {
+    pub(crate) fn requires_inmemory_distinct_with_joins(&self) -> bool {
         match self {
             ReadQuery::RecordQuery(_) => false,
-            ReadQuery::ManyRecordsQuery(q) => q.args.distinct.is_some() || q.nested.iter().any(|q| q.has_cursor()),
-            ReadQuery::RelatedRecordsQuery(q) => q.args.distinct.is_some() || q.nested.iter().any(|q| q.has_cursor()),
-            ReadQuery::AggregateRecordsQuery(_) => false,
-        }
-    }
-
-    pub(crate) fn has_virtual_selections(&self) -> bool {
-        fn has_virtuals(selection: &FieldSelection, nested: &[ReadQuery]) -> bool {
-            selection.has_virtual_fields() || nested.iter().any(|q| q.has_virtual_selections())
-        }
-
-        match self {
-            ReadQuery::RecordQuery(q) => has_virtuals(&q.selected_fields, &q.nested),
-            ReadQuery::ManyRecordsQuery(q) => has_virtuals(&q.selected_fields, &q.nested),
-            ReadQuery::RelatedRecordsQuery(q) => has_virtuals(&q.selected_fields, &q.nested),
+            ReadQuery::ManyRecordsQuery(q) => q.requires_inmemory_distinct_with_joins(),
+            ReadQuery::RelatedRecordsQuery(q) => q.requires_inmemory_distinct_with_joins(),
             ReadQuery::AggregateRecordsQuery(_) => false,
         }
     }
@@ -220,6 +207,13 @@ pub struct ManyRecordsQuery {
     pub relation_load_strategy: RelationLoadStrategy,
 }
 
+impl ManyRecordsQuery {
+    pub fn requires_inmemory_distinct_with_joins(&self) -> bool {
+        self.args.requires_inmemory_distinct_with_joins()
+            || self.nested.iter().any(|q| q.requires_inmemory_distinct_with_joins())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RelatedRecordsQuery {
     pub name: String,
@@ -240,12 +234,9 @@ impl RelatedRecordsQuery {
         self.args.cursor.is_some() || self.nested.iter().any(|q| q.has_cursor())
     }
 
-    pub fn has_distinct(&self) -> bool {
-        self.args.distinct.is_some() || self.nested.iter().any(|q| q.has_distinct())
-    }
-
-    pub fn has_virtual_selections(&self) -> bool {
-        self.selected_fields.has_virtual_fields() || self.nested.iter().any(|q| q.has_virtual_selections())
+    pub fn requires_inmemory_distinct_with_joins(&self) -> bool {
+        self.args.requires_inmemory_distinct_with_joins()
+            || self.nested.iter().any(|q| q.requires_inmemory_distinct_with_joins())
     }
 }
 
