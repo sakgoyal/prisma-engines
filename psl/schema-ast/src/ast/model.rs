@@ -76,6 +76,12 @@ pub struct Model {
     pub(crate) is_view: bool,
     /// The location of this model in the text representation.
     pub(crate) span: Span,
+    
+    /// Is the model defined as Abstract
+    pub(crate) is_abstract: bool,
+
+    /// The name of the model this model extends.
+    pub(crate) extends: Option<Identifier>,
 }
 
 impl Model {
