@@ -19,20 +19,22 @@ schema = {
     SOI
     ~ (model_declaration | enum_declaration | config_block | type_alias | arbitrary_block | comment_block | empty_lines | CATCH_ALL)*
     ~ EOI
-    }
+}
 
 // ######################################
 // Model and composite types
 // ######################################
 
 // At the syntax level, models and composite types are the same.
-model_declaration = { 
+model_declaration = {
+    ABSTRACT_KEYWORD? ~
     (MODEL_KEYWORD | TYPE_KEYWORD | VIEW_KEYWORD)
     ~ identifier
+    ~ (EXTENDS_KEYWORD ~ base_type)?
     ~ BLOCK_OPEN
     ~ model_contents
     ~ BLOCK_CLOSE
-    }
+}
 
 field_declaration = {
     identifier
@@ -41,7 +43,7 @@ field_declaration = {
     ~ field_attribute*
     ~ trailing_comment?
     ~ NEWLINE
-    }
+}
 
 model_contents = {
     (field_declaration | (block_attribute ~ NEWLINE) | comment_block | empty_lines | BLOCK_LEVEL_CATCH_ALL)*
@@ -65,7 +67,7 @@ legacy_list_type = { "[" ~ base_type ~ "]" }
 // ######################################
 // Type Alias
 // ######################################
-type_alias = { TYPE_KEYWORD ~ identifier ~ "=" ~ base_type ~ field_attribute*  }
+type_alias = { TYPE_KEYWORD ~ identifier ~ "=" ~ base_type ~ field_attribute* }
 
 // ######################################
 // Configuration blocks
@@ -76,7 +78,7 @@ config_block = {
     ~ BLOCK_OPEN
     ~ config_contents
     ~ BLOCK_CLOSE
-    }
+}
 
 key_value = { identifier ~ "=" ~ expression? ~ trailing_comment? }
 
@@ -96,11 +98,11 @@ enum_declaration = {
     ~ BLOCK_OPEN
     ~ enum_contents
     ~ BLOCK_CLOSE
-    }
+}
 
 enum_value_declaration = { identifier ~ field_attribute* ~ trailing_comment? ~ NEWLINE }
 enum_contents = {
-    (enum_value_declaration | (block_attribute ~ NEWLINE) | comment_block | empty_lines | BLOCK_LEVEL_CATCH_ALL)* 
+    (enum_value_declaration | (block_attribute ~ NEWLINE) | comment_block | empty_lines | BLOCK_LEVEL_CATCH_ALL)*
 }
 
 // ######################################
@@ -148,6 +150,8 @@ VIEW_KEYWORD = { "view" }
 GENERATOR_KEYWORD = { "generator" }
 DATASOURCE_KEYWORD = { "datasource" }
 LEGACY_COLON = { ":" }
+ABSTRACT_KEYWORD = { "abstract" }
+EXTENDS_KEYWORD  = { "extends" }
 
 CATCH_ALL = { (!NEWLINE ~ ANY)+ ~ NEWLINE? }
 BLOCK_LEVEL_CATCH_ALL = { !BLOCK_CLOSE ~ CATCH_ALL }
