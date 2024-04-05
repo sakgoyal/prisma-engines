@@ -13,6 +13,8 @@ pub(crate) fn parse_model(pair: Pair<'_>, doc_comment: Option<Pair<'_>>, diagnos
     let mut name: Option<Identifier> = None;
     let mut attributes: Vec<Attribute> = Vec::new();
     let mut fields: Vec<Field> = Vec::new();
+    let mut is_abstract = false;
+    let mut extends : Option<Identifier> = None;
 
     for current in pair.into_inner() {
         match current.as_rule() {
@@ -44,6 +46,8 @@ pub(crate) fn parse_model(pair: Pair<'_>, doc_comment: Option<Pair<'_>>, diagnos
                 }
             }
             _ => parsing_catch_all(&current, "model"),
+            Rule::ABSTRACT_KEYWORD => is_abstract = true,
+            Rule::EXTENDS_KEYWORD => extends = Some(current.into()),
         }
     }
 
@@ -54,6 +58,8 @@ pub(crate) fn parse_model(pair: Pair<'_>, doc_comment: Option<Pair<'_>>, diagnos
             attributes,
             documentation: doc_comment.and_then(parse_comment_block),
             is_view: false,
+            is_abstract,
+            extends: None,
             span: Span::from(pair_span),
         },
         _ => panic!("Encountered impossible model declaration during parsing",),
