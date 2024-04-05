@@ -88,4 +88,6 @@ const RESERVED_NAMES: &[&str] = &[
     "while",
     "with",
     "yield",
+    "abstract",
+    "extends",
 ];
